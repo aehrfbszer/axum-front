@@ -3,7 +3,8 @@ import reactLogo from './assets/react.svg'
 import viteLogo from '/vite.svg'
 import './App.css'
 import { newFetchRequest } from './fetchRequest'
-import { Flex, Layout } from 'antd';
+import { Layout } from 'antd';
+import { AutoPendingRetry } from './pendingCountTimes'
 
 const { Header, Footer, Sider, Content } = Layout;
 
@@ -37,12 +38,7 @@ const footerStyle: React.CSSProperties = {
   backgroundColor: '#4096ff',
 };
 
-const layoutStyle = {
-  borderRadius: 8,
-  overflow: 'hidden',
-  width: 'calc(50% - 8px)',
-  maxWidth: 'calc(50% - 8px)',
-};
+
 
 
 const myFetch = newFetchRequest({
@@ -77,25 +73,62 @@ resetLoadingTool({
   },
 })
 
+const letMeTry = new AutoPendingRetry(5, undefined, true)
+
 
 const testAxum = () => {
 
-  const doit = () => fetchAxum({
+  const doitSuccess = () => fetchAxum({
     url: '/users',
     method: 'post',
     data: {
       username: 'uuuui'
     }
-  }, {
-    repeat_request_cancel: true
   }).then(
     res => {
       console.log(res, 'RRRT');
     }
   )
-  doit()
-  doit()
-  doit()
+
+
+  const doitFail = (path: string) => () => fetchAxum({
+    url: `/${path}`,
+    method: 'post',
+    data: {
+      username: 'uuuui'
+    }
+  }).then(
+    res => {
+      console.log(res, 'RRRT');
+    }
+  )
+
+
+  letMeTry.generatorOne(
+    doitFail('1111')
+  )
+  letMeTry.generatorOne(
+    doitFail('2222')
+  )
+  letMeTry.generatorOne(
+    doitFail('3333')
+  )
+  letMeTry.generatorOne(
+    doitFail('4444')
+  )
+
+
+  let cc = 0
+
+  const timer = setInterval(
+    () => {
+      cc++
+      if (cc === 3) clearInterval(timer)
+      letMeTry.generatorOne(
+        doitSuccess
+      )
+    }, 80
+  )
 
 }
 
@@ -103,7 +136,7 @@ function App() {
   const [count, setCount] = useState(0)
 
   return (
-    <Layout style={layoutStyle}>
+    <Layout >
       <Header style={headerStyle}>Header</Header>
       <Layout>
         <Sider width="25%" style={siderStyle}>
